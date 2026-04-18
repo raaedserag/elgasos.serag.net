@@ -23,17 +23,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Build application
-        run: npm run build
+        run: |
+          mkdir -p dist/icons/
+          cp -r icons dist/icons/
+          cp service-worker.js dist/
+          cp manifest.json dist/
+          cp index.html dist/
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
