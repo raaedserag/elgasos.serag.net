@@ -44,16 +44,12 @@ jobs:
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "index.html" \
-            --exclude "error.html" \
             --exclude "*.xml" \
             --exclude "*.txt" \
             --exclude "*.json"
           
           # Upload HTML files with no-cache (always fresh)
           aws s3 cp dist/index.html s3://${{ env.S3_BUCKET }}/index.html \
-            --cache-control "no-cache, no-store, must-revalidate"
-          
-          aws s3 cp dist/error.html s3://${{ env.S3_BUCKET }}/error.html \
             --cache-control "no-cache, no-store, must-revalidate"
           
           # Upload SEO files with short cache (sitemap, robots)
