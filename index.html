@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>لعبة الجاسوس</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="الجاسوس">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #0a0a0f;
+    --ink: #f4ecd8;
+    --blood: #c8102e;
+    --gold: #d4a24c;
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Cairo', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(200, 16, 46, 0.08), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(212, 162, 76, 0.06), transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: overlay;
+  }
+  .app {
+    position: relative;
+    z-index: 2;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+    min-height: 100vh;
+  }
+  .screen { display: none; animation: fadeIn 0.4s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hdr {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-top: 20px;
+  }
+  .hdr .eye {
+    font-size: 56px;
+    display: block;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 0 20px rgba(200, 16, 46, 0.4));
+  }
+  .hdr h1 {
+    font-family: 'Amiri', serif;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(180deg, var(--gold) 0%, #a8823c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hdr .sub {
+    font-size: 13px;
+    color: rgba(244, 236, 216, 0.5);
+    letter-spacing: 4px;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border: 1px solid rgba(244, 236, 216, 0.1);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+  }
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(244, 236, 216, 0.7);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(244, 236, 216, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .stepper button {
+    background: transparent;
+    border: none;
+    color: var(--gold);
+    font-size: 24px;
+    font-weight: 800;
+    width: 52px;
+    height: 52px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .stepper button:active { background: rgba(212, 162, 76, 0.15); }
+  .stepper .val {
+    flex: 1;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+    font-family: 'Amiri', serif;
+    color: var(--ink);
+  }
+  .cats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .cat {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(244, 236, 216, 0.12);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .cat .icn { font-size: 24px; display: block; margin-bottom: 4px; }
+  .cat.on {
+    background: linear-gradient(180deg, rgba(212, 162, 76, 0.2), rgba(212, 162, 76, 0.05));
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 20px rgba(212, 162, 76, 0.2);
+  }
+  .cat.all {
+    grid-column: span 2;
+    background: linear-gradient(180deg, rgba(200, 16, 46, 0.15), rgba(200, 16, 46, 0.05));
+    border-color: rgba(200, 16, 46, 0.4);
+  }
+  .cat.all.on {
+    background: linear-gradient(180deg, rgba(200, 16, 46, 0.3), rgba(200, 16, 46, 0.1));
+    border-color: var(--blood);
+    color: var(--ink);
+    box-shadow: 0 0 20px rgba(200, 16, 46, 0.3);
+  }
+  .btn {
+    width: 100%;
+    background: linear-gradient(180deg, var(--blood), #8b0a20);
+    color: var(--ink);
+    border: none;
+    border-radius: 14px;
+    padding: 18px;
+    font-size: 17px;
+    font-weight: 800;
+    font-family: 'Cairo', sans-serif;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-top: 8px;
+    box-shadow: 0 8px 24px rgba(200, 16, 46, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn.ghost {
+    background: transparent;
+    border: 1px solid rgba(244, 236, 216, 0.2);
+    box-shadow: none;
+    color: rgba(244, 236, 216, 0.7);
+  }
+  .btn.gold {
+    background: linear-gradient(180deg, var(--gold), #a8823c);
+    color: #0a0a0f;
+    box-shadow: 0 8px 24px rgba(212, 162, 76, 0.3);
+  }
+  .pass {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .pass .num {
+    font-family: 'Amiri', serif;
+    font-size: 110px;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(180deg, var(--gold), #8b6a30);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .pass .ttl {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .pass .dsc {
+    font-size: 15px;
+    color: rgba(244, 236, 216, 0.6);
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+  .envelope {
+    width: 220px;
+    height: 140px;
+    margin: 0 auto 36px;
+    position: relative;
+    background: linear-gradient(180deg, #2a1f12, #1a130a);
+    border-radius: 10px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212, 162, 76, 0.2);
+    border: 1px solid rgba(212, 162, 76, 0.3);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .envelope:active { transform: scale(0.97); }
+  .envelope::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 60%;
+    background: linear-gradient(180deg, #3a2b1a, #2a1f12);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    border-bottom: 1px solid rgba(212, 162, 76, 0.2);
+  }
+  .envelope::after {
+    content: '✦';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    color: var(--gold);
+    z-index: 2;
+    text-shadow: 0 0 20px rgba(212, 162, 76, 0.6);
+  }
+  .reveal {
+    padding: 30px 24px;
+    text-align: center;
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .role-card {
+    background: linear-gradient(180deg, #f4ecd8, #e8dcc0);
+    color: #1a130a;
+    border-radius: 20px;
+    padding: 50px 28px;
+    margin-bottom: 28px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+    position: relative;
+    overflow: hidden;
+  }
+  .role-card::before {
+    content: '';
+    position: absolute; inset: 8px;
+    border: 2px solid rgba(26, 19, 10, 0.15);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+  .role-card .stamp {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: rgba(26, 19, 10, 0.5);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .role-card .kind {
+    font-size: 13px;
+    color: rgba(26, 19, 10, 0.55);
+    margin-bottom: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .role-card .answer {
+    font-family: 'Amiri', serif;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1a130a;
+    margin: 8px 0;
+  }
+  .role-card.spy {
+    background: linear-gradient(180deg, #1a0508, #0a0203);
+    color: var(--ink);
+    border: 2px solid var(--blood);
+    box-shadow: 0 30px 60px rgba(200, 16, 46, 0.4), 0 0 40px rgba(200, 16, 46, 0.3);
+  }
+  .role-card.spy::before {
+    border-color: rgba(200, 16, 46, 0.3);
+  }
+  .role-card.spy .stamp { color: rgba(200, 16, 46, 0.7); }
+  .role-card.spy .spy-title {
+    font-family: 'Amiri', serif;
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--blood);
+    text-shadow: 0 0 30px rgba(200, 16, 46, 0.5);
+    margin: 16px 0;
+  }
+  .role-card.spy .spy-msg {
+    font-size: 16px;
+    color: rgba(244, 236, 216, 0.8);
+    line-height: 1.7;
+  }
+  .result {
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .result h2 {
+    font-family: 'Amiri', serif;
+    font-size: 36px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .result .place-reveal {
+    font-size: 15px;
+    color: rgba(244, 236, 216, 0.6);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .result .place-kind {
+    font-size: 13px;
+    color: var(--gold);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+  }
+  .result .place-name {
+    font-family: 'Amiri', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 32px;
+  }
+  .spy-list {
+    background: rgba(200, 16, 46, 0.08);
+    border: 1px solid rgba(200, 16, 46, 0.3);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .spy-list .lbl {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--blood);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .spy-list .nums {
+    font-family: 'Amiri', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .warn {
+    background: rgba(200, 16, 46, 0.1);
+    border: 1px solid rgba(200, 16, 46, 0.3);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 13px;
+    color: rgba(244, 236, 216, 0.8);
+    text-align: center;
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="screen active" id="setup">
+    <div class="hdr">
+      <span class="eye">🕵</span>
+      <h1>لعبة الجاسوس</h1>
+      <div class="sub">S P Y F A L L</div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>عدد اللاعبين</label>
+        <div class="stepper">
+          <button onclick="adjust('players', -1)">−</button>
+          <div class="val" id="playersVal">5</div>
+          <button onclick="adjust('players', 1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>عدد الجواسيس</label>
+        <div class="stepper">
+          <button onclick="adjust('spies', -1)">−</button>
+          <div class="val" id="spiesVal">1</div>
+          <button onclick="adjust('spies', 1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>الفئة</label>
+      <div class="cats" id="cats"></div>
+    </div>
+
+    <button class="btn" onclick="startGame()">ابدأ اللعبة</button>
+  </div>
+
+  <div class="screen" id="pass">
+    <div class="pass">
+      <div class="num" id="passNum">1</div>
+      <div class="ttl">دور اللاعب</div>
+      <div class="dsc">سلّم التليفون للاعب رقم <span id="passNumInline">1</span><br>واضغط على الظرف لرؤية الإجابة</div>
+      <div class="envelope" onclick="revealRole()"></div>
+      <div style="font-size: 12px; color: rgba(244,236,216,0.4); letter-spacing: 2px;">
+        اضغط للكشف
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="reveal">
+    <div class="reveal">
+      <div class="role-card" id="roleCard"></div>
+      <button class="btn ghost" onclick="nextPlayer()">حفظته ✓ التالي</button>
+    </div>
+  </div>
+
+  <div class="screen" id="ready">
+    <div class="result">
+      <h2>تم التوزيع</h2>
+      <div class="place-reveal" style="margin-bottom: 32px; font-size: 16px; line-height: 1.8;">
+        كل اللاعبين شافوا أدوارهم<br>
+        ابدأوا اللعب وناقشوا بأسئلتكم
+      </div>
+      <button class="btn" onclick="showReveal()">اكشف الإجابة والجواسيس</button>
+      <button class="btn ghost" onclick="reset()" style="margin-top: 12px;">جولة جديدة</button>
+      <div class="warn">
+        اضغط "اكشف" بس بعد ما الجولة تخلص فعلاً
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="result">
+    <div class="result">
+      <h2>انتهى التوزيع</h2>
+      <div class="place-reveal">الإجابة كانت</div>
+      <div class="place-kind" id="finalKind"></div>
+      <div class="place-name" id="finalPlace"></div>
+      <div class="spy-list">
+        <div class="lbl">🗡 الجواسيس</div>
+        <div class="nums" id="spyNums"></div>
+      </div>
+      <button class="btn gold" onclick="reset()">جولة جديدة</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DATA = {
+    'أماكن': {
+      icon: '🏛',
+      label: 'مكان',
+      items: [
+        // شوارع ومناطق
+        'وسط البلد', 'خان الخليلي', 'الحسين', 'شارع المعز', 'كورنيش النيل',
+        'شارع الهرم', 'شارع التحرير', 'ميدان التحرير', 'شبرا', 'الزمالك',
+        'المعادي', 'مصر الجديدة', 'المهندسين', 'الدقي', 'فيصل',
+        'إمبابة', 'المطرية', 'حلوان', 'المرج', 'العتبة',
+        // مدن ومحافظات
+        'الإسكندرية', 'الساحل الشمالي', 'شرم الشيخ', 'الغردقة', 'دهب',
+        'مرسى مطروح', 'العين السخنة', 'رأس البر', 'الأقصر', 'أسوان',
+        'الفيوم', 'سيوة', 'المنصورة', 'طنطا', 'أسيوط',
+        // أماكن بلدي
+        'السوق', 'القهوة البلدي', 'محل الكشري', 'محل الفول والطعمية', 'الفرن البلدي',
+        'محل الحلواني', 'عربية الفول', 'محل العصير', 'محل الشاورما', 'محل الفطير',
+        'الجزار', 'السمكري', 'محل الخضار', 'البقال', 'محل الحلاق',
+        // مواصلات
+        'المترو', 'الميكروباص', 'التوكتوك', 'الأوتوبيس', 'التاكسي',
+        'القطار', 'المحطة', 'الكوبري', 'الترام',
+        // أماكن عامة
+        'النادي', 'الجيم', 'الجامعة', 'المدرسة', 'المستشفى',
+        'الصيدلية', 'البنك', 'مكتب البريد', 'قسم الشرطة', 'المحكمة',
+        'السوبر ماركت', 'كارفور', 'السينما', 'المسرح', 'المول',
+        'الملاهي', 'حديقة الحيوان', 'حديقة الأزهر', 'الأوبرا', 'المتحف المصري',
+        // عائلي وديني
+        'بيت العيلة', 'الأفراح', 'السبوع', 'العزا', 'الجامع',
+        'الكنيسة', 'الأهرامات', 'أبو الهول', 'قلعة صلاح الدين',
+        // رياضة
+        'ستاد القاهرة', 'نادي الأهلي', 'نادي الزمالك', 'ملعب كورة'
+      ]
+    },
+    'أفلام': {
+      icon: '🎬',
+      label: 'فيلم',
+      items: [
+        // عادل إمام
+        'الإرهاب والكباب', 'المنسي', 'طيور الظلام', 'النوم في العسل', 'اللعب مع الكبار',
+        'الإرهابي', 'رمضان فوق البركان', 'السفارة في العمارة', 'حسن ومرقص', 'مرجان أحمد مرجان',
+        'زهايمر', 'بوبوس', 'عريس من جهة أمنية',
+        // محمد سعد
+        'اللمبي', 'اللي بالي بالك', 'كتكوت', 'بوشكاش', 'اللمبي 8 جيجا',
+        'كركر', 'بوحة', 'تكه تكه',
+        // محمد هنيدي
+        'صعيدي في الجامعة الأمريكية', 'همام في أمستردام', 'عسكر في المعسكر', 'جاءنا البيان التالي',
+        'يا أنا يا خالتي', 'فول الصين العظيم', 'بلية ودماغه العالية', 'رمضان مبروك أبو العلمين حمودة',
+        // أحمد حلمي
+        'زكي شان', 'عسل إسود', 'ألف مبروك', 'مطب صناعي', 'كده رضا',
+        'ميدو مشاكل', 'آسف على الإزعاج', 'إكس لارج', 'على جثتي', 'سامي أكسيد الكربون',
+        'لف ودوران',
+        // كريم عبد العزيز
+        'أبو علي', 'الباشا تلميذ', 'واحد من الناس', 'ابن القنصل', 'تيمور وشفيقة',
+        'جواز بقرار جمهوري', 'ولاد رزق', 'كيرة والجن',
+        // أحمد السقا
+        'مافيا', 'تيتو', 'إبراهيم الأبيض', 'الجزيرة', 'ولاد العم',
+        'الرهينة', 'مولانا', 'الممر', 'بنتين من مصر',
+        // كلاسيك وقديم
+        'الكيت كات', 'عمارة يعقوبيان', 'المواطن مصري', 'الحفيد', 'إشاعة حب',
+        'البيه البواب', 'الناظر', 'حرامية في كي جي تو', 'اللص والكلاب', 'زوجتي والكلب',
+        'دعاء الكروان', 'الأرض', 'باب الحديد', 'شيء من الخوف', 'المومياء',
+        'غروب وشروق', 'الزوجة الثانية', 'إمبراطورية ميم', 'أيام السادات',
+        // تامر حسني
+        'عمر وسلمى', 'كابتن هيما', 'بدل الحدوتة تلاتة', 'تك تك بوم',
+        // حديثة
+        'ولاد رزق 2', 'ولاد رزق 3', 'كازابلانكا', 'الفيل الأزرق', 'الفيل الأزرق 2',
+        'تراب الماس', 'هيبتا', 'الأصليين', 'الكنز', 'البعض لا يذهب للمأذون مرتين',
+        '18 يوم', 'رسائل البحر', 'الخلية', 'قصة حب'
+      ]
+    },
+    'مسلسلات': {
+      icon: '📺',
+      label: 'مسلسل',
+      items: [
+        // قديم وكلاسيك
+        'ليالي الحلمية', 'رأفت الهجان', 'الشهد والدموع', 'هو وهي', 'ذئاب الجبل',
+        'لن أعيش في جلباب أبي', 'الراية البيضاء', 'زيزينيا', 'أرابيسك', 'بوابة الحلواني',
+        'الضوء الشارد', 'المال والبنون', 'وجه القمر', 'يتربى في عزو',
+        // كوميدي
+        'راجل وست ستات', 'الكبير أوي', 'ابن حلال', 'ابن موت', 'ضرب نار',
+        'فيفا أطاطا', 'يوميات زوجة مفروسة', 'تامر وشوقية', 'بدون ذكر أسماء',
+        // رمضانية حديثة
+        'الاختيار', 'الاختيار 2', 'الاختيار 3', 'النمر', 'جعفر العمدة',
+        'الأجهر', 'الهرشة السابعة', 'بعد الشر', 'أفراح القبة', 'الحساب يجمع',
+        'سوتس بالعربي', 'موسى', 'ممالك النار', 'ب 100 وش', 'حرب أهلية',
+        'كوفيد 25', 'حرب الجبالي', 'نسل الأغراب', 'البرنس', 'الجماعة',
+        'خلي بالك من زيزي', 'في كل أسبوع يوم جمعة', 'قابل للكسر', 'بيمبو',
+        'بنت السلطان', 'وش وضهر', 'قصر النيل', 'جراند أوتيل', 'سابع جار',
+        'الآنسة فرح', 'لعبة نيوتن', 'قواعد المرلي', 'القاهرة كابول',
+        // شعبي
+        'الأسطورة', 'هوجان', 'المداح', 'ظل الرئيس', 'إلا أنا'
+      ]
+    },
+    'أكل مصري': {
+      icon: '🍽',
+      label: 'أكلة',
+      items: [
+        'الكشري', 'الفول', 'الطعمية', 'الفطير المشلتت', 'الملوخية',
+        'المحشي', 'الممبار', 'الكبدة الإسكندراني', 'الحمام المحشي', 'الفسيخ',
+        'الرنجة', 'البطارخ', 'الكباب', 'الكفتة', 'الحواوشي',
+        'الشاورما', 'المكرونة بشاميل', 'صيادية', 'صينية البطاطس', 'ورق عنب',
+        'البامية', 'البسلة بالجزر', 'الرز المعمر', 'الفراخ المشوية', 'الفراخ البانيه',
+        'الجمبري', 'السمك المشوي', 'الكابوريا', 'الكنافة', 'البسبوسة',
+        'أم علي', 'الباسطة', 'الغريبة', 'البقلاوة', 'القطايف',
+        'المهلبية', 'الأرز باللبن', 'العيش البلدي', 'عيش شامي', 'الجبنة القريش',
+        'المش', 'الطحينة', 'البابا غنوج', 'البيض بالبسطرمة', 'اللانشون'
+      ]
+    },
+    'شخصيات مصرية': {
+      icon: '⭐',
+      label: 'شخصية',
+      items: [
+        // فنانين رجالة
+        'عادل إمام', 'أحمد حلمي', 'محمد هنيدي', 'محمد سعد', 'كريم عبد العزيز',
+        'أحمد السقا', 'محمد رمضان', 'محمد إمام', 'يحيى الفخراني', 'نور الشريف',
+        'أحمد زكي', 'فريد شوقي', 'عمر الشريف', 'رشدي أباظة', 'محمود عبد العزيز',
+        'علاء ولي الدين', 'خالد صالح', 'هشام سليم', 'حسين فهمي', 'محمود ياسين',
+        'أشرف عبد الباقي', 'ماجد الكدواني', 'محمد فراج', 'آسر ياسين', 'أمير كرارة',
+        'أحمد عز', 'أحمد فهمي', 'هشام ماجد', 'شيكو', 'بيومي فؤاد',
+        'أحمد مكي', 'محمد صبحي', 'سمير غانم', 'فؤاد المهندس', 'عبد المنعم مدبولي',
+        // فنانات
+        'منى زكي', 'ياسمين عبد العزيز', 'هند صبري', 'منى شلبي', 'نيللي كريم',
+        'يسرا', 'إلهام شاهين', 'ليلى علوي', 'سميحة أيوب', 'فاتن حمامة',
+        'سعاد حسني', 'شادية', 'نادية الجندي', 'نبيلة عبيد', 'معالي زايد',
+        'شيرين رضا', 'غادة عبد الرازق', 'دنيا سمير غانم', 'إيمي سمير غانم',
+        'منة شلبي', 'كندة علوش', 'ريم مصطفى', 'دينا الشربيني', 'أمينة خليل',
+        // مطربين
+        'عمرو دياب', 'تامر حسني', 'محمد منير', 'محمد فؤاد', 'حميد الشاعري',
+        'مدحت صالح', 'عمرو مصطفى', 'محمد حماقي', 'أنغام', 'شيرين',
+        'نانسي عجرم', 'إليسا', 'هاني شاكر', 'علي الحجار', 'رامي صبري',
+        'تامر عاشور', 'حسن شاكوش', 'حمو بيكا', 'وائل الفشني', 'محمد ثروت',
+        // طرب قديم
+        'أم كلثوم', 'عبد الحليم حافظ', 'محمد عبد الوهاب', 'فريد الأطرش', 'ليلى مراد',
+        'شادية', 'وردة الجزائرية', 'نجاة الصغيرة', 'محرم فؤاد', 'صباح',
+        // رياضيين
+        'محمد صلاح', 'محمد أبو تريكة', 'أحمد حسن', 'عصام الحضري', 'محمد زيدان',
+        'عمرو زكي', 'ميدو', 'حازم إمام', 'خالد بيبو', 'وائل جمعة',
+        'محمد النني', 'محمد الشناوي', 'تريزيجيه', 'محمد صبحي', 'عمر مرموش',
+        'إمام عاشور', 'حسام حسن', 'إبراهيم حسن',
+        // سياسة وتاريخ
+        'جمال عبد الناصر', 'أنور السادات', 'محمد نجيب', 'سعد زغلول', 'مصطفى كامل',
+        'طلعت حرب', 'أحمد عرابي', 'محمد علي باشا', 'الخديوي إسماعيل',
+        // أدب وعلم
+        'نجيب محفوظ', 'طه حسين', 'توفيق الحكيم', 'يوسف إدريس', 'إحسان عبد القدوس',
+        'أنيس منصور', 'مصطفى محمود', 'أحمد زويل', 'مجدي يعقوب', 'فاروق الباز',
+        // إعلام
+        'عمرو أديب', 'أحمد موسى', 'وائل الإبراشي', 'لميس الحديدي', 'ريهام سعيد',
+        'باسم يوسف', 'إبراهيم عيسى'
+      ]
+    }
+  };
+
+  function getAllItems() {
+    const all = [];
+    Object.keys(DATA).forEach(cat => {
+      DATA[cat].items.forEach(item => {
+        all.push({ item, kind: DATA[cat].label });
+      });
+    });
+    return all;
+  }
+
+  const state = {
+    players: 5,
+    spies: 1,
+    category: 'أماكن',
+    assignments: [],
+    currentPlayer: 0,
+    chosen: '',
+    chosenKind: '',
+    spyIndices: []
+  };
+
+  function renderCats() {
+    const box = document.getElementById('cats');
+    box.innerHTML = '';
+    Object.keys(DATA).forEach(cat => {
+      const el = document.createElement('div');
+      el.className = 'cat' + (cat === state.category ? ' on' : '');
+      el.innerHTML = `<span class="icn">${DATA[cat].icon}</span>${cat}`;
+      el.onclick = () => { state.category = cat; renderCats(); };
+      box.appendChild(el);
+    });
+    const allEl = document.createElement('div');
+    allEl.className = 'cat all' + (state.category === '__ALL__' ? ' on' : '');
+    allEl.innerHTML = `<span class="icn">🎲</span>الكل عشوائي`;
+    allEl.onclick = () => { state.category = '__ALL__'; renderCats(); };
+    box.appendChild(allEl);
+  }
+
+  function adjust(key, delta) {
+    if (key === 'players') {
+      state.players = Math.max(3, Math.min(12, state.players + delta));
+      document.getElementById('playersVal').textContent = state.players;
+      if (state.spies >= state.players) {
+        state.spies = state.players - 1;
+        document.getElementById('spiesVal').textContent = state.spies;
+      }
+    } else {
+      state.spies = Math.max(1, Math.min(state.players - 1, state.spies + delta));
+      document.getElementById('spiesVal').textContent = state.spies;
+    }
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function startGame() {
+    if (state.category === '__ALL__') {
+      const all = getAllItems();
+      const pick = pickRandom(all);
+      state.chosen = pick.item;
+      state.chosenKind = pick.kind;
+    } else {
+      const cat = DATA[state.category];
+      state.chosen = pickRandom(cat.items);
+      state.chosenKind = cat.label;
+    }
+
+    // الخلط المزدوج:
+    // 1) نخلط الأرقام اللي هتظهر للاعبين (مش لازم ١،٢،٣،٤ بالترتيب)
+    //    ده بيمنع إن الشخص اللي بياخد التليفون الأول يكون دايماً "لاعب ١"
+    const displayNumbers = shuffle(
+      Array.from({length: state.players}, (_, i) => i + 1)
+    );
+
+    // 2) نخلط مين فيهم جاسوس (بشكل مستقل عن ترتيب التسليم)
+    const positions = Array.from({length: state.players}, (_, i) => i);
+    const spyPositions = new Set(shuffle(positions).slice(0, state.spies));
+
+    // نبني الـ assignments بترتيب التسليم (0, 1, 2, ...)
+    // كل موقع ليه رقم عرض مختلف + حالة جاسوس مستقلة
+    state.assignments = [];
+    for (let i = 0; i < state.players; i++) {
+      state.assignments.push({
+        displayNumber: displayNumbers[i],
+        isSpy: spyPositions.has(i)
+      });
+    }
+
+    // نحفظ أرقام الجواسيس بالأرقام اللي شافها المستخدم
+    state.spyIndices = state.assignments
+      .filter(a => a.isSpy)
+      .map(a => a.displayNumber)
+      .sort((a, b) => a - b);
+
+    state.currentPlayer = 0;
+    showPass();
+  }
+
+  function showPass() {
+    switchScreen('pass');
+    const num = state.assignments[state.currentPlayer].displayNumber;
+    document.getElementById('passNum').textContent = num;
+    document.getElementById('passNumInline').textContent = num;
+  }
+
+  function revealRole() {
+    const a = state.assignments[state.currentPlayer];
+    const card = document.getElementById('roleCard');
+
+    if (a.isSpy) {
+      card.className = 'role-card spy';
+      card.innerHTML = `
+        <div class="stamp">◆ سري للغاية ◆</div>
+        <div class="spy-title">أنت الجاسوس</div>
+        <div class="spy-msg">
+          اكتشف الإجابة من أسئلة الناس<br>
+          بدون ما حد يكشفك
+        </div>
+      `;
+    } else {
+      card.className = 'role-card';
+      card.innerHTML = `
+        <div class="stamp">◆ ملف سري ◆</div>
+        <div class="kind">${state.chosenKind}</div>
+        <div class="answer">${state.chosen}</div>
+      `;
+    }
+    switchScreen('reveal');
+  }
+
+  function nextPlayer() {
+    state.currentPlayer++;
+    if (state.currentPlayer >= state.players) {
+      // بعد آخر لاعب: شاشة "تم التوزيع" بدون أي معلومات مكشوفة
+      switchScreen('ready');
+    } else {
+      showPass();
+    }
+  }
+
+  function showReveal() {
+    document.getElementById('finalKind').textContent = state.chosenKind;
+    document.getElementById('finalPlace').textContent = state.chosen;
+    document.getElementById('spyNums').textContent = 
+      'لاعب رقم ' + state.spyIndices.join(' و ');
+    switchScreen('result');
+  }
+
+  function reset() {
+    switchScreen('setup');
+  }
+
+  function switchScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  renderCats();
+
+  // Register service worker for offline support
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .catch((err) => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>
